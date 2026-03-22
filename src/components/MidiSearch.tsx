@@ -147,12 +147,17 @@ export function MidiSearch({ onSongParsed }: Props) {
   };
 
   const handleImportUrl = async () => {
-    if (!urlInput.trim()) return;
+    const trimmed = urlInput.trim();
+    if (!trimmed) return;
+    if (!/\.midi?(\?[^/]*)?$/i.test(trimmed)) {
+      setError('URL must point to a .mid or .midi file.');
+      return;
+    }
     setImporting({ url: true });
     setError(null);
     try {
-      const name = urlInput.split('/').pop() ?? 'song.mid';
-      await importFromUrl(urlInput.trim(), name);
+      const name = trimmed.split('/').pop()?.split('?')[0] ?? 'song.mid';
+      await importFromUrl(trimmed, name);
       setUrlInput('');
     } catch (err) {
       setError(`Could not fetch URL: ${(err as Error).message}`);

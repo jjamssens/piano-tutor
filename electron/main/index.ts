@@ -238,21 +238,36 @@ app.whenReady().then(() => {
   buildMenu();
   createWindow();
 
-  // Auto-updater — only runs in packaged builds
-  // Requires a GitHub repo with releases. Set owner/repo in package.json > build > publish.
+  // Auto-updater — only runs in packaged builds.
+  // autoDownload is disabled so the user is prompted before anything is downloaded.
   if (app.isPackaged) {
+    autoUpdater.autoDownload = false;
+
+    autoUpdater.on('update-available', () => {
+      dialog.showMessageBox(mainWindow!, {
+        type: 'info',
+        title: 'Update Available',
+        message: 'A new version of Piano Tutor is available.',
+        detail: 'Would you like to download and install it now?',
+        buttons: ['Download', 'Later'],
+      }).then(({ response }) => {
+        if (response === 0) autoUpdater.downloadUpdate();
+      });
+    });
+
     autoUpdater.on('update-downloaded', () => {
       dialog.showMessageBox(mainWindow!, {
         type: 'info',
         title: 'Update Ready',
-        message: 'A new version of Piano Tutor is ready.',
-        detail: 'The update has been downloaded. Restart to apply it.',
+        message: 'Piano Tutor has been updated.',
+        detail: 'Restart the app to apply the update.',
         buttons: ['Restart Now', 'Later'],
       }).then(({ response }) => {
         if (response === 0) autoUpdater.quitAndInstall();
       });
     });
-    autoUpdater.checkForUpdatesAndNotify();
+
+    autoUpdater.checkForUpdates();
   }
 
   app.on('activate', () => {
@@ -266,10 +281,14 @@ app.on('window-all-closed', () => {
 
 // ─── IPC: read local MIDI file ─────────────────────────────────────────────
 // Used when a .mid file is opened via file association or File > Open.
+// Path is validated to .mid/.midi only — prevents arbitrary file reads.
 
 ipcMain.handle(
   'read-midi-file',
   (_event, filePath: string): { data: string; name: string } | { error: string } => {
+    if (!/\.midi?$/i.test(filePath)) {
+      return { error: 'Only .mid and .midi files are supported.' };
+    }
     try {
       const buf = readFileSync(filePath);
       return { data: buf.toString('base64'), name: basename(filePath) };
@@ -281,6 +300,9 @@ ipcMain.handle(
 
 // ─── IPC: BitMidi proxy ────────────────────────────────────────────────────
 // Main process has no CORS restrictions — fetches on behalf of the renderer.
+// URL is validated against an allowlist to prevent SSRF.
+
+const BITMIDI_ALLOWED_HOSTS = new Set(['bitmidi.com', 'www.bitmidi.com']);
 
 ipcMain.handle(
   'fetch-bitmidi',
@@ -293,6 +315,10 @@ ipcMain.handle(
     | { type: 'error'; message: string }
   > => {
     try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:' || !BITMIDI_ALLOWED_HOSTS.has(parsed.hostname)) {
+        return { type: 'error', message: 'URL not allowed.' };
+      }
       const response = await net.fetch(url);
       if (!response.ok) return { type: 'error', message: `HTTP ${response.status}` };
       const ct = response.headers.get('content-type') ?? '';
