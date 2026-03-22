@@ -1,0 +1,136 @@
+{
+  "name": "piano-tutor",
+  "productName": "Piano Tutor",
+  "private": true,
+  "version": "1.0.0",
+  "main": "dist/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:linux": "electron-vite build && electron-builder --linux",
+    "make-icon": "node scripts/make-icon.mjs",
+    "lint": "eslint ."
+  },
+  "build": {
+    "appId": "com.pianotutor.app",
+    "productName": "Piano Tutor",
+    "copyright": "Copyright © 2026",
+    "asar": true,
+    "files": [
+      "dist/**/*"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "fileAssociations": [
+      {
+        "ext": "mid",
+        "name": "MIDI File",
+        "description": "MIDI Music File",
+        "role": "Viewer"
+      },
+      {
+        "ext": "midi",
+        "name": "MIDI File",
+        "description": "MIDI Music File",
+        "role": "Viewer"
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "piano-tutor"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.music",
+      "dmg": {
+        "contents": [
+          {
+            "x": 150,
+            "y": 200,
+            "type": "file"
+          },
+          {
+            "x": 400,
+            "y": 200,
+            "type": "link",
+            "path": "/Applications"
+          },
+          {
+            "x": 275,
+            "y": 340,
+            "type": "file",
+            "path": "build/mac-open-helper.command"
+          }
+        ]
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Audio"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "@julusian/midi": "^3.6.1",
+    "@tonejs/midi": "^2.0.28",
+    "electron-updater": "^6.8.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "vexflow": "^5.0.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.57.0",
+    "vite": "^8.0.1"
+  }
+}

@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(1rem); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.2s ease-out forwards;
+}
+/* ── Design tokens ──────────────────────────────────────────────────────────
+   Semantic layer — reference these in components, never raw hex values.
+   Tailwind utilities are the preferred way to apply them. ── */
+:root {
+  --color-surface-base:     #030712;   /* gray-950 */
+  --color-surface-raised:   #111827;   /* gray-900 */
+  --color-surface-overlay:  #1f2937;   /* gray-800 */
+  --color-border:           #374151;   /* gray-700 */
+  --color-border-subtle:    #1f2937;   /* gray-800 */
+  --color-text-primary:     #f9fafb;   /* gray-50  */
+  --color-text-secondary:   #9ca3af;   /* gray-400 */
+  --color-text-muted:       #6b7280;   /* gray-500 */
+  --color-accent:           #6366f1;   /* indigo-500 */
+  --color-accent-glow:      rgba(99,102,241,0.35);
+  --color-success:          #4ade80;   /* green-400 */
+  --color-warning:          #facc15;   /* yellow-400 */
+  --color-error:            #f87171;   /* red-400   */
+}
+
+/* ── Room transitions ───────────────────────────────────────────────────── */
+@keyframes room-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.room-enter {
+  animation: room-in 0.18s ease-out forwards;
+}
+
+/* ── Count pop (CountdownOverlay) ───────────────────────────────────────── */
+@keyframes countPop {
+  0%   { transform: scale(1.6); opacity: 0; }
+  60%  { transform: scale(0.95); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
