@@ -21,7 +21,7 @@ import { TEMPO_PRESETS } from './types/game.types';
 
 const LAST_SONG_KEY = 'piano-tutor-last-song';
 
-type Tab = 'home' | 'play';
+type View = 'home' | 'play';
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 
@@ -48,7 +48,7 @@ export default function App() {
     () => !sessionStorage.getItem('piano-tutor-welcomed')
   );
   const [showOnboarding, setShowOnboarding] = useState(needsOnboarding);
-  const [tab, setTab]                       = useState<Tab>('home');
+  const [view, setView]                     = useState<View>('home');
   const [showSettings, setShowSettings]     = useState(false);
   const [showImport, setShowImport]         = useState(false);
   const [importTab, setImportTab]           = useState<'search' | 'upload'>('search');
@@ -61,14 +61,14 @@ export default function App() {
 
   const isActive = isPlaying || sessionPhase === 'countdown';
 
-  const goTab = (t: Tab) => { if (!isActive || t === 'play') setTab(t); };
+  const goHome = () => { if (!isActive) setView('home'); };
 
   const handleSelectLesson = (song: LessonSong, scaffoldHint?: ScaffoldPhase) => {
     loadSong(song);
     if (scaffoldHint) setScaffoldPhase(scaffoldHint);
     setLastSongId(song.id);
     localStorage.setItem(LAST_SONG_KEY, song.id);
-    setTab('play');
+    setView('play');
   };
 
   const handleSongParsed = (song: LessonSong) => {
@@ -79,7 +79,7 @@ export default function App() {
     setLastSongId(song.id);
     localStorage.setItem(LAST_SONG_KEY, song.id);
     setShowImport(false);
-    setTab('play');
+    setView('play');
   };
 
   const handleSongParsedRef = useRef(handleSongParsed);
@@ -164,26 +164,37 @@ export default function App() {
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header className="flex-none flex items-center gap-3 px-4 h-12 border-b border-gray-800 bg-gray-950">
-          <span className="font-bold text-white text-sm tracking-tight whitespace-nowrap">Piano Tutor</span>
 
-          {/* Active song pill */}
-          <div className="flex-1 flex justify-center min-w-0">
-            {activeSong ? (
-              <button
-                onClick={() => !isActive && goTab('home')}
-                disabled={isActive}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors disabled:pointer-events-none max-w-xs truncate"
-              >
+          {/* Back arrow on Play view; wordmark on Home */}
+          {view === 'play' ? (
+            <button
+              onClick={goHome}
+              disabled={isActive}
+              className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              <span className="text-base leading-none">←</span>
+              <span className="text-xs font-medium hidden sm:inline">Home</span>
+            </button>
+          ) : (
+            <span className="font-bold text-white text-sm tracking-tight whitespace-nowrap flex-shrink-0">
+              Piano Tutor
+            </span>
+          )}
+
+          {/* Center: song name on Play, progress on Home */}
+          <div className="flex-1 flex justify-center min-w-0 px-2">
+            {view === 'play' && activeSong ? (
+              <div className="flex items-center gap-1.5 max-w-xs truncate">
                 <LevelBadge level={activeSong.difficultyLevel ?? 1} />
                 <span className="text-xs text-gray-300 truncate">
                   {activeSong.title.replace(/^Lesson \d+ — /, '')}
                 </span>
-              </button>
+              </div>
             ) : (
               <span className="text-xs text-gray-700 hidden sm:inline">
                 {completedCount > 0
                   ? `${completedCount} of ${CURRICULUM.length} lessons completed`
-                  : 'Select a lesson to get started'}
+                  : 'Piano Tutor'}
               </span>
             )}
           </div>
@@ -203,30 +214,9 @@ export default function App() {
           </button>
         </header>
 
-        {/* ── Tabs ───────────────────────────────────────────────────────── */}
-        <nav className="flex-none flex border-b border-gray-800">
-          {([
-            { id: 'home' as Tab, label: 'Home',  icon: '🏠' },
-            { id: 'play' as Tab, label: 'Play',  icon: '🎹' },
-          ]).map(({ id, label, icon }) => (
-            <button
-              key={id}
-              onClick={() => goTab(id)}
-              disabled={isActive && id !== 'play'}
-              className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-widest transition-colors
-                disabled:opacity-30 disabled:cursor-not-allowed
-                ${tab === id
-                  ? 'text-white border-b-2 border-indigo-500 bg-gray-900/40'
-                  : 'text-gray-600 hover:text-gray-300'}`}
-            >
-              <span className="mr-1">{icon}</span>{label}
-            </button>
-          ))}
-        </nav>
-
         {/* ── Content ────────────────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto">
-          {tab === 'home' && (
+          {view === 'home' && (
             <HomeTab
               overallProgress={overallProgress}
               songProgress={songProgress}
@@ -244,7 +234,7 @@ export default function App() {
               handleRemoveUserSong={handleRemoveUserSong}
             />
           )}
-          {tab === 'play' && (
+          {view === 'play' && (
             <PlayTab
               mode={mode} setMode={setMode}
               isActive={isActive} isPlaying={isPlaying}
@@ -253,7 +243,7 @@ export default function App() {
               startSession={startSession} stopSession={stopSession}
               sessionStats={sessionStats}
               songProgress={songProgress}
-              onGoHome={() => goTab('home')}
+              onGoHome={goHome}
             />
           )}
         </main>
@@ -460,23 +450,7 @@ function PlayTab({ mode, setMode, isActive, isPlaying, sessionPhase, activeSong,
   songProgress: Record<string, import('./types/game.types').SongProgress>;
   onGoHome: () => void;
 }) {
-  // No song loaded — send user back to Home
-  if (!activeSong) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-        <div className="w-14 h-14 rounded-full bg-gray-900 border border-gray-800 flex items-center justify-center text-2xl">
-          🎹
-        </div>
-        <p className="text-gray-400 text-sm">No song selected.</p>
-        <button
-          onClick={onGoHome}
-          className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-semibold text-white transition-colors"
-        >
-          Go to Home
-        </button>
-      </div>
-    );
-  }
+  if (!activeSong) return null;
 
   return (
     <div className="room-enter flex flex-col items-center gap-3 px-4 pt-4 pb-6">
