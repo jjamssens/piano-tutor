@@ -26,10 +26,17 @@ export function MidiUploader({ onSongParsed }: Props) {
   const [errorMsg, setError]  = useState<string | null>(null);
   const [lastFile, setLastFile] = useState<string | null>(null);
 
+  const MAX_MIDI_BYTES = 5 * 1024 * 1024; // 5 MB — far above any real MIDI file
+
   const processFile = async (file: File) => {
     if (!file.name.match(/\.midi?$/i)) {
       setState('error');
       setError('Only .mid / .midi files are supported.');
+      return;
+    }
+    if (file.size > MAX_MIDI_BYTES) {
+      setState('error');
+      setError('File is too large. MIDI files should be under 5 MB.');
       return;
     }
 

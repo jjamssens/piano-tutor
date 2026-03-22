@@ -61,8 +61,8 @@ class MidiService {
     }
 
     try {
-      // sysex: true required per skill spec (future-proofs SysEx use)
-      this.midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+      // sysex: false — app uses standard Note-On/Off only; no SysEx needed
+      this.midiAccess = await navigator.requestMIDIAccess({ sysex: false });
       this.bindDevicePorts();
 
       // Listen for hot-plug events
