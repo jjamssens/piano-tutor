@@ -42,7 +42,7 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
+      "owner": "jjamssens",
       "repo": "piano-tutor"
     },
     "mac": {
