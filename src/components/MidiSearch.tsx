@@ -58,6 +58,7 @@ async function bitMidiFetch(proxyPath: string, directUrl: string): Promise<Respo
  * Falls back gracefully to a direct URL importer if the API is unavailable.
  */
 export function MidiSearch({ onSongParsed }: Props) {
+  const keyboardRange               = useMidiStore((s) => s.keyboardRange);
   const [query, setQuery]           = useState('');
   const [results, setResults]       = useState<BitMidiResult[]>([]);
   const [total, setTotal]           = useState(0);

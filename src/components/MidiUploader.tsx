@@ -3,6 +3,7 @@ import { parseMidiFile } from '../engine/MidiFileParser';
 import { useMidiStore } from '../stores/useMidiStore';
 import type { LessonSong } from '../types/game.types';
 
+
 interface Props {
   onSongParsed: (song: LessonSong) => void;
 }
@@ -25,6 +26,7 @@ export function MidiUploader({ onSongParsed }: Props) {
   const [state, setState]     = useState<UploadState>('idle');
   const [errorMsg, setError]  = useState<string | null>(null);
   const [lastFile, setLastFile] = useState<string | null>(null);
+  const keyboardRange         = useMidiStore((s) => s.keyboardRange);
 
   const MAX_MIDI_BYTES = 5 * 1024 * 1024; // 5 MB — far above any real MIDI file
 
