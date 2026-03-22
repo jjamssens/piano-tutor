@@ -1,93 +1,76 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <!-- App background gradient: deep navy to dark indigo -->
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"   stop-color="#0f1729"/>
-      <stop offset="100%" stop-color="#1e1040"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%"   stop-color="#1a1340"/>
+      <stop offset="100%" stop-color="#080612"/>
     </linearGradient>
-    <!-- Key white gradient (subtle top highlight) -->
-    <linearGradient id="wkey" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"   stop-color="#f0f4ff"/>
-      <stop offset="100%" stop-color="#cdd5f0"/>
+    <linearGradient id="wk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#edf0fb"/>
+      <stop offset="100%" stop-color="#c8d0ea"/>
     </linearGradient>
-    <!-- Lit key glow gradient (indigo/violet) -->
-    <linearGradient id="litkey" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="lk" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%"   stop-color="#a78bfa"/>
-      <stop offset="100%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
     </linearGradient>
-    <!-- Glow filter for lit key -->
-    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+    <filter id="keyglow" x="-35%" y="-15%" width="170%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <!-- Subtle drop shadow for keyboard block -->
-    <filter id="shadow" x="-5%" y="-5%" width="110%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.5"/>
+    <filter id="noteglow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <!-- Background rounded rect -->
-  <rect width="512" height="512" rx="96" ry="96" fill="url(#bg)"/>
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
 
-  <!-- ── Keyboard block ─────────────────────────────────── -->
-  <!-- 7 white keys, centred, with 3 black keys above -->
+  <!-- ── Musical notes (upper centre) ───────────────────────── -->
+  <g fill="#c4b5fd" filter="url(#noteglow)">
+    <!-- Note 1 head -->
+    <ellipse cx="196" cy="218" rx="28" ry="20" transform="rotate(-18 196 218)"/>
+    <!-- Note 1 stem -->
+    <rect x="219" y="108" width="11" height="116" rx="4"/>
 
-  <g filter="url(#shadow)">
-    <!-- White keys (7 keys, each 52px wide, 4px gap → total = 7×52+6×4 = 388px; left = (512-388)/2 = 62) -->
-    <!-- Key order: C D E F G A B (indices 0-6) -->
-    <!-- Positions: 62, 118, 174, 230, 286, 342, 398 -->
+    <!-- Note 2 head (higher on the scale — step up) -->
+    <ellipse cx="308" cy="194" rx="28" ry="20" transform="rotate(-18 308 194)"/>
+    <!-- Note 2 stem -->
+    <rect x="331" y="84" width="11" height="116" rx="4"/>
 
-    <!-- Key C (index 0) — lit -->
-    <rect x="62"  y="268" width="52" height="160" rx="6" fill="url(#litkey)" filter="url(#glow)"/>
-    <!-- Key D -->
-    <rect x="118" y="268" width="52" height="160" rx="6" fill="url(#wkey)"/>
-    <!-- Key E -->
-    <rect x="174" y="268" width="52" height="160" rx="6" fill="url(#wkey)"/>
-    <!-- Key F -->
-    <rect x="230" y="268" width="52" height="160" rx="6" fill="url(#wkey)"/>
-    <!-- Key G — lit -->
-    <rect x="286" y="268" width="52" height="160" rx="6" fill="url(#litkey)" filter="url(#glow)"/>
-    <!-- Key A -->
-    <rect x="342" y="268" width="52" height="160" rx="6" fill="url(#wkey)"/>
-    <!-- Key B — lit -->
-    <rect x="398" y="268" width="52" height="160" rx="6" fill="url(#litkey)" filter="url(#glow)"/>
-
-    <!-- Black keys (C#, D#, F#, G#, A#) -->
-    <!-- C# between C(62) and D(118): x = 62+52-16 = 98 -->
-    <rect x="98"  y="268" width="36" height="96" rx="4" fill="#1a1a2e"/>
-    <!-- D# between D(118) and E(174): x = 118+52-16 = 154 -->
-    <rect x="154" y="268" width="36" height="96" rx="4" fill="#1a1a2e"/>
-    <!-- F# between F(230) and G(286): x = 230+52-16 = 266 -->
-    <rect x="266" y="268" width="36" height="96" rx="4" fill="#1a1a2e"/>
-    <!-- G# between G(286) and A(342): x = 286+52-16 = 322 -->
-    <rect x="322" y="268" width="36" height="96" rx="4" fill="#1a1a2e"/>
-    <!-- A# between A(342) and B(398): x = 342+52-16 = 378 -->
-    <rect x="378" y="268" width="36" height="96" rx="4" fill="#1a1a2e"/>
+    <!-- Beam connecting stem tops (slants upward left→right) -->
+    <path d="M219 108 L342 84 L342 102 L219 126 Z"/>
   </g>
 
-  <!-- ── Musical note ──────────────────────────────────── -->
-  <!-- Centred above the keyboard, glowing violet -->
-  <g filter="url(#glow)" fill="#c4b5fd">
-    <!-- Note head (filled ellipse) -->
-    <ellipse cx="218" cy="172" rx="28" ry="22" transform="rotate(-20 218 172)"/>
-    <!-- Stem -->
-    <rect x="242" y="82" width="10" height="96" rx="4"/>
-    <!-- Flag -->
-    <path d="M252 82 C310 110 310 148 270 160" stroke="#c4b5fd" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <!-- ── Piano keyboard ─────────────────────────────────────── -->
+  <!-- 7 white keys: pitch=56 (52px + 4px gap), x_start=62, y_top=296, h=172 -->
+  <!-- C(62) D(118) E(174) F(230) G(286) A(342) B(398) -->
 
-    <!-- Second note — offset right, smaller -->
-    <ellipse cx="308" cy="148" rx="22" ry="17" transform="rotate(-20 308 148)"/>
-    <rect x="328" y="68" width="8" height="84" rx="4"/>
-    <!-- Beam connecting stems -->
-    <rect x="242" y="82" width="94" height="10" rx="4"/>
-  </g>
+  <!-- C — lit (C major chord) -->
+  <rect x="62"  y="296" width="52" height="172" rx="7" fill="url(#lk)" filter="url(#keyglow)"/>
+  <!-- D -->
+  <rect x="118" y="296" width="52" height="172" rx="7" fill="url(#wk)"/>
+  <!-- E — lit -->
+  <rect x="174" y="296" width="52" height="172" rx="7" fill="url(#lk)" filter="url(#keyglow)"/>
+  <!-- F -->
+  <rect x="230" y="296" width="52" height="172" rx="7" fill="url(#wk)"/>
+  <!-- G — lit -->
+  <rect x="286" y="296" width="52" height="172" rx="7" fill="url(#lk)" filter="url(#keyglow)"/>
+  <!-- A -->
+  <rect x="342" y="296" width="52" height="172" rx="7" fill="url(#wk)"/>
+  <!-- B -->
+  <rect x="398" y="296" width="52" height="172" rx="7" fill="url(#wk)"/>
 
-  <!-- ── "PT" wordmark (subtle, bottom centre) -->
-  <text x="256" y="490" text-anchor="middle"
-        font-family="'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
-        font-size="28" font-weight="700" letter-spacing="6"
-        fill="#6d5fa8" opacity="0.7">PIANO TUTOR</text>
+  <!-- Black keys: w=34, h=104, same y_top=296 -->
+  <!-- Positions: x = white_key_x + 52 - 17 -->
+  <!-- C#=97, D#=153, F#=265, G#=321, A#=377 -->
+  <rect x="97"  y="296" width="34" height="104" rx="5" fill="#0f0c1e"/>
+  <rect x="153" y="296" width="34" height="104" rx="5" fill="#0f0c1e"/>
+  <rect x="265" y="296" width="34" height="104" rx="5" fill="#0f0c1e"/>
+  <rect x="321" y="296" width="34" height="104" rx="5" fill="#0f0c1e"/>
+  <rect x="377" y="296" width="34" height="104" rx="5" fill="#0f0c1e"/>
+
+  <!-- Glow halos beneath lit keys -->
+  <ellipse cx="88"  cy="480" rx="34" ry="12" fill="#7c3aed" opacity="0.4"/>
+  <ellipse cx="200" cy="480" rx="34" ry="12" fill="#7c3aed" opacity="0.4"/>
+  <ellipse cx="312" cy="480" rx="34" ry="12" fill="#7c3aed" opacity="0.4"/>
 </svg>

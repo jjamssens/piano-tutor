@@ -105,6 +105,12 @@ export default function App() {
     saveUserSongs(updated);
   };
 
+  const handleRenameUserSong = (id: string, newTitle: string) => {
+    const updated = userSongs.map((s) => s.id === id ? { ...s, title: newTitle } : s);
+    setUserSongs(updated);
+    saveUserSongs(updated);
+  };
+
   const isUnlocked = (index: number) => {
     if (index === 0) return true;
     return (songProgress[CURRICULUM[index - 1].id]?.bestScore ?? 0) >= UNLOCK_THRESHOLD;
@@ -232,6 +238,7 @@ export default function App() {
               handleSelectLesson={handleSelectLesson}
               handleSongParsed={handleSongParsed}
               handleRemoveUserSong={handleRemoveUserSong}
+              handleRenameUserSong={handleRenameUserSong}
               onOpenSettings={() => setShowSettings(true)}
             />
           )}
@@ -339,6 +346,7 @@ function HomeTab({
   handleSelectLesson: (s: LessonSong, hint?: ScaffoldPhase) => void;
   handleSongParsed: (s: LessonSong) => void;
   handleRemoveUserSong: (id: string) => void;
+  handleRenameUserSong: (id: string, title: string) => void;
   onOpenSettings: () => void;
 }) {
   const { difficulty, tempoMultiplier, handMode } = useGameStore();
@@ -463,6 +471,7 @@ function HomeTab({
         handleSelectLesson={handleSelectLesson}
         handleSongParsed={handleSongParsed}
         handleRemoveUserSong={handleRemoveUserSong}
+        handleRenameUserSong={handleRenameUserSong}
       />
 
     </div>
@@ -566,6 +575,7 @@ function SongLibrary({
   handleSelectLesson: (s: LessonSong, hint?: ScaffoldPhase) => void;
   handleSongParsed: (s: LessonSong) => void;
   handleRemoveUserSong: (id: string) => void;
+  handleRenameUserSong: (id: string, title: string) => void;
 }) {
   const [libTab, setLibTab] = useState<LibraryTab>('lessons');
 
@@ -635,6 +645,7 @@ function SongLibrary({
               meta={`${song.bpm} BPM · ${song.notes.length} notes` + (song.difficultyLevel ? ` · Lvl ${song.difficultyLevel}` : '')}
               onSelect={() => handleSelectLesson(song)}
               onRemove={() => handleRemoveUserSong(song.id)}
+              onRename={(title) => handleRenameUserSong(song.id, title)}
             />
           ))}
 
@@ -826,23 +837,35 @@ function LevelBadge({ level }: { level: number }) {
   );
 }
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-3">{children}</h2>
-  );
-}
-
 function DrawerSectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-3">{children}</h3>
   );
 }
 
-function SongRow({ song, isActive, disabled, locked, best, meta, onSelect, onRemove }: {
+function SongRow({ song, isActive, disabled, locked, best, meta, onSelect, onRemove, onRename }: {
   song: LessonSong; isActive: boolean; disabled: boolean;
   locked?: boolean; best: number; meta: string;
-  onSelect: () => void; onRemove?: () => void;
+  onSelect: () => void; onRemove?: () => void; onRename?: (title: string) => void;
 }) {
+  const [editing, setEditing]   = useState(false);
+  const [editVal, setEditVal]   = useState('');
+  const inputRef                = useRef<HTMLInputElement>(null);
+
+  const startEdit = (e: React.MouseEvent) => {
+    if (!onRename || disabled) return;
+    e.stopPropagation();
+    setEditVal(song.title);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  };
+
+  const commitEdit = () => {
+    const trimmed = editVal.trim();
+    if (trimmed && trimmed !== song.title) onRename?.(trimmed);
+    setEditing(false);
+  };
+
   return (
     <div className={`flex items-center rounded-lg text-sm transition-colors
       ${isActive ? 'bg-indigo-950 border border-indigo-800' :
@@ -854,10 +877,33 @@ function SongRow({ song, isActive, disabled, locked, best, meta, onSelect, onRem
         <div className="flex items-center gap-2">
           {song.difficultyLevel && <LevelBadge level={song.difficultyLevel} />}
           {locked && <span className="text-xs">🔒</span>}
-          <span className={`font-medium text-sm ${isActive ? 'text-white' : locked ? 'text-gray-600' : 'text-gray-300'}`}>
-            {song.title.replace(/^Lesson \d+ — /, '')}
-          </span>
-          {best > 0 && (
+
+          {editing ? (
+            <input
+              ref={inputRef}
+              value={editVal}
+              onChange={(e) => setEditVal(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+                if (e.key === 'Escape') setEditing(false);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 bg-gray-800 border border-indigo-500 rounded px-1.5 py-0.5
+                text-sm text-white focus:outline-none min-w-0"
+            />
+          ) : (
+            <span
+              className={`font-medium text-sm ${isActive ? 'text-white' : locked ? 'text-gray-600' : 'text-gray-300'}
+                ${onRename ? 'cursor-text' : ''}`}
+              onDoubleClick={startEdit}
+              title={onRename ? 'Double-click to rename' : undefined}
+            >
+              {song.title.replace(/^Lesson \d+ — /, '')}
+            </span>
+          )}
+
+          {best > 0 && !editing && (
             <span className="text-xs text-indigo-400 ml-auto flex-shrink-0">{Math.round(best * 100)}%</span>
           )}
         </div>
