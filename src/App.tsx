@@ -232,6 +232,7 @@ export default function App() {
               handleSelectLesson={handleSelectLesson}
               handleSongParsed={handleSongParsed}
               handleRemoveUserSong={handleRemoveUserSong}
+              onOpenSettings={() => setShowSettings(true)}
             />
           )}
           {view === 'play' && (
@@ -322,6 +323,7 @@ function HomeTab({
   lastSong, lastSongId, userSongs, isUnlocked,
   showImport, setShowImport, importTab, setImportTab,
   handleSelectLesson, handleSongParsed, handleRemoveUserSong,
+  onOpenSettings,
 }: {
   overallProgress: import('./types/game.types').OverallProgress;
   songProgress: Record<string, import('./types/game.types').SongProgress>;
@@ -337,7 +339,10 @@ function HomeTab({
   handleSelectLesson: (s: LessonSong, hint?: ScaffoldPhase) => void;
   handleSongParsed: (s: LessonSong) => void;
   handleRemoveUserSong: (id: string) => void;
+  onOpenSettings: () => void;
 }) {
+  const { difficulty, tempoMultiplier, handMode } = useGameStore();
+
   const lastSongIndex = lastSong ? CURRICULUM.findIndex((s) => s.id === lastSong.id) : -1;
   const lastSongScaffold = lastSongIndex >= 0 ? LESSON_SCAFFOLD[lastSongIndex] : undefined;
   const lastSongScore    = lastSongId ? (songProgress[lastSongId]?.bestScore ?? 0) : 0;
@@ -347,16 +352,30 @@ function HomeTab({
     (songProgress[CURRICULUM[i].id]?.bestScore ?? 0) < UNLOCK_THRESHOLD);
   const nextLesson = nextLessonIndex >= 0 ? CURRICULUM[nextLessonIndex] : null;
 
+  const isNewUser = overallProgress.totalSessions === 0;
+
+  // Human-readable setting labels for the indicator row
+  const diffLabel  = difficulty === 'beginner' ? 'Beginner' : difficulty === 'intermediate' ? 'Intermediate' : 'Advanced';
+  const tempoLabel = tempoMultiplier === 1.0 ? '1×' : `${tempoMultiplier}×`;
+  const handsLabel = handMode === 'both' ? 'Both hands' : handMode === 'right' ? 'Right hand' : 'Left hand';
+
   return (
     <div className="room-enter max-w-xl mx-auto px-4 py-5 flex flex-col gap-6">
 
-      {/* ── Stats bar ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <StatTile label="Streak"    value={`${overallProgress.streak}🔥`} />
-        <StatTile label="Sessions"  value={String(overallProgress.totalSessions)} />
-        <StatTile label="Notes"     value={String(overallProgress.totalNotesHit)} />
-        <StatTile label="Minutes"   value={String(overallProgress.totalPracticeMinutes)} />
-      </div>
+      {/* ── Stats bar (hidden for brand-new users) ────────────────────────── */}
+      {isNewUser ? (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 text-center">
+          <p className="text-sm text-gray-300 font-medium">Welcome to Piano Tutor</p>
+          <p className="text-xs text-gray-600 mt-1">Pick a lesson below to start your first session</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-2 text-center">
+          <StatTile label="Streak"   value={overallProgress.streak > 0 ? `${overallProgress.streak} 🔥` : '0'} />
+          <StatTile label="Sessions" value={String(overallProgress.totalSessions)} />
+          <StatTile label="Notes"    value={String(overallProgress.totalNotesHit)} />
+          <StatTile label="Minutes"  value={String(overallProgress.totalPracticeMinutes)} />
+        </div>
+      )}
 
       {/* ── Curriculum progress bar ───────────────────────────────────────── */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 flex flex-col gap-2">
@@ -370,6 +389,19 @@ function HomeTab({
             style={{ width: `${(completedCount / CURRICULUM.length) * 100}%` }}
           />
         </div>
+        {/* Settings indicator — shows active practice settings, opens drawer */}
+        <button
+          onClick={onOpenSettings}
+          className="flex items-center gap-1.5 text-xs mt-0.5 self-start hover:opacity-80 transition-opacity"
+          title="Open settings"
+        >
+          <span className="text-amber-500">{tempoLabel}</span>
+          <span className="text-gray-700">·</span>
+          <span className="text-indigo-400">{diffLabel}</span>
+          <span className="text-gray-700">·</span>
+          <span className="text-green-400">{handsLabel}</span>
+          <span className="text-gray-700 ml-1">↗</span>
+        </button>
       </div>
 
       {/* ── Continue / Start card ─────────────────────────────────────────── */}
@@ -453,10 +485,7 @@ function PlayTab({ mode, setMode, isActive, isPlaying, sessionPhase, activeSong,
   if (!activeSong) return null;
 
   return (
-    <div className="room-enter flex flex-col items-center gap-3 px-4 pt-4 pb-6">
-
-      {/* Inline settings */}
-      <InlineSettings isActive={isActive} />
+    <div className="room-enter flex flex-col items-center gap-2 px-4 pt-2 pb-6">
 
       {/* Mode selector */}
       <div className="flex gap-0.5 bg-gray-900 border border-gray-800 rounded-full p-0.5">
@@ -473,34 +502,30 @@ function PlayTab({ mode, setMode, isActive, isPlaying, sessionPhase, activeSong,
         ))}
       </div>
 
-      {/* Game canvas */}
+      {/* Game canvas — dominant */}
       {mode === 'rhythm-hero' ? <RhythmHero /> : <MasterClass />}
 
-      {/* Play / Stop controls */}
-      <div className="flex items-center gap-3">
+      {/* Play / Stop */}
+      <div className="flex items-center justify-center">
         {!isActive ? (
           <button
             onClick={startSession}
-            className="px-7 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition-colors"
+            className="px-8 py-2.5 bg-green-600 hover:bg-green-500 rounded-lg font-semibold text-sm transition-colors"
           >
             ▶ Play
           </button>
         ) : (
           <button
             onClick={stopSession}
-            className="px-7 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold text-sm transition-colors"
+            className="px-8 py-2.5 bg-red-600 hover:bg-red-500 rounded-lg font-semibold text-sm transition-colors"
           >
             ■ Stop
           </button>
         )}
-        <button
-          onClick={onGoHome}
-          disabled={isActive}
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors disabled:pointer-events-none"
-        >
-          ← Change Song
-        </button>
       </div>
+
+      {/* Settings — below controls, collapsible */}
+      <InlineSettings isActive={isActive} />
 
       {/* Session results */}
       {sessionStats && sessionPhase === 'finished' && (
@@ -680,53 +705,77 @@ function InlineSettings({ isActive }: { isActive: boolean }) {
     handMode, setHandMode,
   } = useGameStore();
 
+  const [expanded, setExpanded] = useState(false);
+
+  const diffLabel  = difficulty === 'beginner' ? 'Beginner' : difficulty === 'intermediate' ? 'Intermediate' : 'Advanced';
+  const tempoLabel = tempoMultiplier === 1.0 ? '1×' : `${tempoMultiplier}×`;
+  const handsLabel = handMode === 'both' ? 'Both' : handMode === 'right' ? 'Right' : 'Left';
+
   return (
-    <div className="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 flex flex-col gap-2.5">
+    <div className="w-full max-w-xl bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
 
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-600 w-14 flex-shrink-0">Tempo</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {TEMPO_PRESETS.map((t) => (
-            <button key={t} onClick={() => setTempoMultiplier(t as TempoMultiplier)}
-              disabled={isActive}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
-                ${tempoMultiplier === t ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
-            >
-              {t === 1.0 ? '1×' : `${t}×`}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Summary row — always visible, click to expand */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-800/50 transition-colors"
+      >
+        <span className="flex items-center gap-2 text-xs">
+          <span className="text-amber-500 font-medium">{tempoLabel}</span>
+          <span className="text-gray-700">·</span>
+          <span className="text-indigo-400 font-medium">{diffLabel}</span>
+          <span className="text-gray-700">·</span>
+          <span className="text-green-400 font-medium">{handsLabel}</span>
+        </span>
+        <span className="text-gray-700 text-xs">{expanded ? '▲' : '▼'}</span>
+      </button>
 
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-600 w-14 flex-shrink-0">Timing</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {INLINE_DIFFICULTIES.map(({ level, label }) => (
-            <button key={level} onClick={() => setDifficulty(level)}
-              disabled={isActive}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
-                ${difficulty === level ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
-            >
-              {label}
-            </button>
-          ))}
+      {/* Expanded controls */}
+      {expanded && (
+        <div className="px-4 pb-3 flex flex-col gap-2.5 border-t border-gray-800 pt-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 w-14 flex-shrink-0">Tempo</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {TEMPO_PRESETS.map((t) => (
+                <button key={t} onClick={() => setTempoMultiplier(t as TempoMultiplier)}
+                  disabled={isActive}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                    ${tempoMultiplier === t ? 'bg-amber-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                >
+                  {t === 1.0 ? '1×' : `${t}×`}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 w-14 flex-shrink-0">Timing</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {INLINE_DIFFICULTIES.map(({ level, label }) => (
+                <button key={level} onClick={() => setDifficulty(level)}
+                  disabled={isActive}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                    ${difficulty === level ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 w-14 flex-shrink-0">Hands</span>
+            <div className="flex gap-1.5 flex-wrap">
+              {INLINE_HAND_MODES.map(({ mode, label }) => (
+                <button key={mode} onClick={() => setHandMode(mode)}
+                  disabled={isActive}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+                    ${handMode === mode ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-gray-600 w-14 flex-shrink-0">Hands</span>
-        <div className="flex gap-1.5 flex-wrap">
-          {INLINE_HAND_MODES.map(({ mode, label }) => (
-            <button key={mode} onClick={() => setHandMode(mode)}
-              disabled={isActive}
-              className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed
-                ${handMode === mode ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
     </div>
   );
