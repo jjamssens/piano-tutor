@@ -22,10 +22,27 @@ export type SessionPhase = 'idle' | 'countdown' | 'playing' | 'finished';
 const SONG_PROGRESS_KEY    = 'piano-tutor-song-progress';
 const OVERALL_PROGRESS_KEY = 'piano-tutor-overall-progress';
 
+function isValidSongProgress(v: unknown): v is SongProgress {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.songId    === 'string' &&
+    typeof o.bestScore === 'number' && isFinite(o.bestScore) &&
+    typeof o.attempts  === 'number' && isFinite(o.attempts)
+  );
+}
+
 function loadSongProgress(): Record<string, SongProgress> {
   try {
     const raw = localStorage.getItem(SONG_PROGRESS_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, SongProgress>) : {};
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const result: Record<string, SongProgress> = {};
+    for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
+      if (isValidSongProgress(val)) result[key] = val;
+    }
+    return result;
   } catch { return {}; }
 }
 
@@ -44,7 +61,16 @@ const DEFAULT_OVERALL: OverallProgress = {
 function loadOverallProgress(): OverallProgress {
   try {
     const raw = localStorage.getItem(OVERALL_PROGRESS_KEY);
-    return raw ? { ...DEFAULT_OVERALL, ...(JSON.parse(raw) as OverallProgress) } : DEFAULT_OVERALL;
+    if (!raw) return DEFAULT_OVERALL;
+    const p = JSON.parse(raw) as Partial<OverallProgress>;
+    // Validate and clamp every field — never trust raw storage values
+    return {
+      totalSessions:        Math.max(0, isFinite(p.totalSessions        ?? NaN) ? p.totalSessions!        : 0),
+      totalNotesHit:        Math.max(0, isFinite(p.totalNotesHit        ?? NaN) ? p.totalNotesHit!        : 0),
+      streak:               Math.max(0, isFinite(p.streak               ?? NaN) ? p.streak!               : 0),
+      lastSessionDate:      typeof p.lastSessionDate === 'string'                ? p.lastSessionDate        : '',
+      totalPracticeMinutes: Math.max(0, isFinite(p.totalPracticeMinutes ?? NaN) ? p.totalPracticeMinutes! : 0),
+    };
   } catch { return DEFAULT_OVERALL; }
 }
 

@@ -290,9 +290,15 @@ class MidiService {
    *   data[2] = velocity (0–127; 0 on Note-On = Note-Off)
    */
   private handleMidiMessage(event: MIDIMessageEvent): void {
-    if (!event.data) return;
+    if (!event.data || event.data.length < 3) return;
     const data = event.data as Uint8Array;
-    const [status, note, velocity] = [data[0], data[1], data[2]];
+    const status   = data[0];
+    const note     = data[1];
+    const velocity = data[2];
+
+    // Validate MIDI spec bounds: note and velocity must be 0–127
+    if (note > 127 || velocity > 127) return;
+
     const isNoteOn = (status & 0xf0) === 0x90 && velocity > 0;
     const isNoteOff =
       (status & 0xf0) === 0x80 || ((status & 0xf0) === 0x90 && velocity === 0);
@@ -307,12 +313,12 @@ class MidiService {
     };
 
     // Auto-expand detected range if a note falls outside it
-    if (typeof note === 'number' && (note < this.keyboardRange.min || note > this.keyboardRange.max)) {
+    if (note < this.keyboardRange.min || note > this.keyboardRange.max) {
       const prevMin = this.keyboardRange.min;
       const prevMax = this.keyboardRange.max;
-      // Snap expansion to nearest octave boundary
-      if (note < prevMin) this.keyboardRange.min = Math.floor(note / 12) * 12;
-      if (note > prevMax) this.keyboardRange.max = Math.ceil(note / 12) * 12;
+      // Snap expansion to nearest octave boundary, clamped to valid MIDI range (0–127)
+      if (note < prevMin) this.keyboardRange.min = Math.max(0,   Math.floor(note / 12) * 12);
+      if (note > prevMax) this.keyboardRange.max = Math.min(127, Math.ceil(note  / 12) * 12);
       console.info(`[MidiService] Keyboard range expanded to MIDI ${this.keyboardRange.min}–${this.keyboardRange.max}`);
       const range = { ...this.keyboardRange };
       for (const cb of this.onRangeChangeCallbacks) cb(range);

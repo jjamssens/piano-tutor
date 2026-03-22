@@ -2,8 +2,9 @@ import {
   app, BrowserWindow, ipcMain, net, session,
   Menu, dialog, clipboard,
 } from 'electron';
-import { join, basename } from 'path';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { join, basename, normalize, resolve } from 'path';
+import { homedir } from 'os';
+import { readFileSync, writeFileSync, existsSync, realpathSync } from 'fs';
 import { autoUpdater } from 'electron-updater';
 
 // Enable Web MIDI API in the Chromium renderer.
@@ -281,17 +282,28 @@ app.on('window-all-closed', () => {
 
 // ─── IPC: read local MIDI file ─────────────────────────────────────────────
 // Used when a .mid file is opened via file association or File > Open.
-// Path is validated to .mid/.midi only — prevents arbitrary file reads.
+// Path is validated to .mid/.midi only and must reside in an allowed directory.
+// Symlinks are resolved before the allowlist check to prevent traversal attacks.
+
+const ALLOWED_READ_ROOTS = [
+  homedir(),
+  app.getPath('downloads'),
+  app.getPath('documents'),
+  app.getPath('desktop'),
+];
 
 ipcMain.handle(
   'read-midi-file',
-  (_event, filePath: string): { data: string; name: string } | { error: string } => {
-    if (!/\.midi?$/i.test(filePath)) {
-      return { error: 'Only .mid and .midi files are supported.' };
-    }
+  (_event, filePath: unknown): { data: string; name: string } | { error: string } => {
+    if (typeof filePath !== 'string') return { error: 'Invalid path.' };
+    if (!/\.midi?$/i.test(filePath))  return { error: 'Only .mid and .midi files are supported.' };
     try {
-      const buf = readFileSync(filePath);
-      return { data: buf.toString('base64'), name: basename(filePath) };
+      // Resolve symlinks before checking allowed roots — prevents ln -s /etc/secret.mid attacks
+      const real    = realpathSync(normalize(filePath));
+      const allowed = ALLOWED_READ_ROOTS.some((root) => real.startsWith(resolve(root) + '/') || real === resolve(root));
+      if (!allowed) return { error: 'Access denied: file outside allowed directories.' };
+      const buf = readFileSync(real);
+      return { data: buf.toString('base64'), name: basename(real) };
     } catch (err) {
       return { error: (err as Error).message };
     }

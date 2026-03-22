@@ -116,6 +116,12 @@ export function parseMidiFile(
     });
   }
 
+  // Guard: reject pathologically large files before the O(n²) classifier runs
+  const MAX_NOTES = 20_000;
+  if (allNotes.length > MAX_NOTES) {
+    throw new Error(`MIDI file has too many notes (${allNotes.length}). Maximum supported: ${MAX_NOTES}.`);
+  }
+
   // Sort by absolute time
   allNotes.sort((a, b) => a.targetTimestamp - b.targetTimestamp);
 
@@ -151,27 +157,39 @@ export function classifyDifficulty(song: LessonSong): number {
   const notes = song.notes;
   if (notes.length === 0) return 1;
 
-  // 1. Note range span (semitones between lowest and highest note)
-  const minNote = Math.min(...notes.map((n) => n.note));
-  const maxNote = Math.max(...notes.map((n) => n.note));
-  const span    = maxNote - minNote;
+  // 1. Note range span — iterate instead of spread to avoid stack overflow on large arrays
+  let minNote = notes[0].note;
+  let maxNote = notes[0].note;
+  for (const n of notes) {
+    if (n.note < minNote) minNote = n.note;
+    if (n.note > maxNote) maxNote = n.note;
+  }
+  const span = maxNote - minNote;
   const spanScore = span < 8 ? 0 : span < 16 ? 1 : span < 24 ? 2 : 3;
 
   // 2. Note density (notes per second)
-  const songMs   = Math.max(...notes.map((n) => n.targetTimestamp + n.durationMs)) - notes[0].targetTimestamp;
-  const density  = songMs > 0 ? (notes.length / (songMs / 1000)) : 1;
+  let songEnd = 0;
+  for (const n of notes) {
+    const end = n.targetTimestamp + n.durationMs;
+    if (end > songEnd) songEnd = end;
+  }
+  const songMs = songEnd - notes[0].targetTimestamp;
+  const density = songMs > 0 ? notes.length / (songMs / 1000) : 1;
   const densityScore = density < 2 ? 0 : density < 4 ? 1 : density < 7 ? 2 : 3;
 
-  // 3. Peak polyphony (max simultaneous notes)
-  let maxPoly = 1;
-  for (let i = 0; i < notes.length; i++) {
-    const end = notes[i].targetTimestamp + notes[i].durationMs;
-    let concurrent = 1;
-    for (let j = i + 1; j < notes.length; j++) {
-      if (notes[j].targetTimestamp < end) concurrent++;
-      else break;
-    }
-    if (concurrent > maxPoly) maxPoly = concurrent;
+  // 3. Peak polyphony — O(n log n) sweep-line instead of O(n²) nested loop
+  type Ev = { t: number; d: 1 | -1 };
+  const events: Ev[] = [];
+  for (const n of notes) {
+    events.push({ t: n.targetTimestamp,                d:  1 });
+    events.push({ t: n.targetTimestamp + n.durationMs, d: -1 });
+  }
+  events.sort((a, b) => a.t - b.t || a.d - b.d); // end before start on ties
+  let maxPoly = 0;
+  let current = 0;
+  for (const ev of events) {
+    current += ev.d;
+    if (current > maxPoly) maxPoly = current;
   }
   const polyScore = maxPoly <= 1 ? 0 : maxPoly <= 2 ? 1 : 2;
 
@@ -205,18 +223,37 @@ export function saveUserSongs(songs: LessonSong[]): void {
   }
 }
 
+function isValidSerializedSong(s: unknown): s is SerializedSong {
+  if (!s || typeof s !== 'object') return false;
+  const o = s as Record<string, unknown>;
+  return (
+    typeof o.id    === 'string' &&
+    typeof o.title === 'string' &&
+    typeof o.bpm   === 'number' && isFinite(o.bpm) && o.bpm > 0 &&
+    Array.isArray(o.notes) &&
+    o.keySignature !== null && typeof o.keySignature === 'object'
+  );
+}
+
 export function loadUserSongs(): LessonSong[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    const parsed: SerializedSong[] = JSON.parse(raw);
-    return parsed.map((s) => ({
-      ...s,
-      keySignature: {
-        ...s.keySignature,
-        alteredPitches: new Set(s.keySignature.alteredPitches),
-      },
-    }));
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(isValidSerializedSong)
+      .map((s) => ({
+        ...s,
+        keySignature: {
+          ...s.keySignature,
+          alteredPitches: new Set(
+            Array.isArray(s.keySignature.alteredPitches)
+              ? s.keySignature.alteredPitches.filter((n): n is number => typeof n === 'number')
+              : []
+          ),
+        },
+      }));
   } catch {
     return [];
   }
