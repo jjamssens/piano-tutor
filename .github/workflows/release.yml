@@ -29,7 +29,7 @@ jobs:
           # APPLE_ID: ${{ secrets.APPLE_ID }}           # for notarization
           # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: npm run dist:mac
+        run: npm run dist:mac -- --publish always
 
   build-win:
     runs-on: windows-latest
@@ -46,4 +46,4 @@ jobs:
           # When you have a Windows code signing certificate, add:
           # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-        run: npm run dist:win
+        run: npm run dist:win -- --publish always
