@@ -45,7 +45,8 @@
     "publish": {
       "provider": "github",
       "owner": "jjamssens",
-      "repo": "piano-tutor"
+      "repo": "piano-tutor",
+      "releaseType": "release"
     },
     "dmg": {
       "contents": [
