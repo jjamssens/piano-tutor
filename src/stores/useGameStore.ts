@@ -93,6 +93,7 @@ interface GameStoreState {
   tempoMultiplier: TempoMultiplier;
   handMode: HandMode;
   showNoteLabels: boolean;
+  autoPlayEnabled: boolean;
   loopEnabled: boolean;
   loopRegion: LoopRegion;
   activeSong: LessonSong | null;
@@ -111,6 +112,7 @@ interface GameStoreState {
   setTempoMultiplier: (t: TempoMultiplier) => void;
   setHandMode: (mode: HandMode) => void;
   setShowNoteLabels: (show: boolean) => void;
+  setAutoPlayEnabled: (enabled: boolean) => void;
   setLoopEnabled: (enabled: boolean) => void;
   setLoopRegion: (region: LoopRegion) => void;
   loadSong: (song: LessonSong) => void;
@@ -132,6 +134,7 @@ export const useGameStore = create<GameStoreState>()(
     tempoMultiplier: 1.0,
     handMode: 'both',
     showNoteLabels: false,
+    autoPlayEnabled: false,
     loopEnabled: false,
     loopRegion: { startPct: 0, endPct: 1 },
     activeSong: null,
@@ -151,6 +154,7 @@ export const useGameStore = create<GameStoreState>()(
     setTempoMultiplier: (t) => set({ tempoMultiplier: t }),
     setHandMode: (mode) => set({ handMode: mode }),
     setShowNoteLabels: (show) => set({ showNoteLabels: show }),
+    setAutoPlayEnabled: (enabled) => set({ autoPlayEnabled: enabled }),
     setLoopEnabled: (enabled) => set({ loopEnabled: enabled }),
     setLoopRegion: (region) => set({ loopRegion: region }),
 

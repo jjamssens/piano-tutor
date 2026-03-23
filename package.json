@@ -1,6 +1,8 @@
 {
   "name": "piano-tutor",
   "productName": "Piano Tutor",
+  "description": "An interactive piano learning app with MIDI support, sheet music, and real-time feedback.",
+  "author": "Justin Jamssens <jmjamssens@gmail.com>",
   "private": true,
   "version": "1.0.0",
   "main": "dist/main/index.js",
@@ -17,7 +19,7 @@
   "build": {
     "appId": "com.pianotutor.app",
     "productName": "Piano Tutor",
-    "copyright": "Copyright © 2026",
+    "copyright": "Copyright © 2026 Justin Jamssens",
     "asar": true,
     "files": [
       "dist/**/*"
@@ -45,6 +47,27 @@
       "owner": "jjamssens",
       "repo": "piano-tutor"
     },
+    "dmg": {
+      "contents": [
+        {
+          "x": 150,
+          "y": 200,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 275,
+          "y": 340,
+          "type": "file",
+          "path": "build/mac-open-helper.command"
+        }
+      ]
+    },
     "mac": {
       "target": [
         {
@@ -56,27 +79,10 @@
         }
       ],
       "category": "public.app-category.music",
-      "dmg": {
-        "contents": [
-          {
-            "x": 150,
-            "y": 200,
-            "type": "file"
-          },
-          {
-            "x": 400,
-            "y": 200,
-            "type": "link",
-            "path": "/Applications"
-          },
-          {
-            "x": 275,
-            "y": 340,
-            "type": "file",
-            "path": "build/mac-open-helper.command"
-          }
-        ]
-      }
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
       "target": [

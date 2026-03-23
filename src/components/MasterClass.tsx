@@ -37,6 +37,7 @@ export function MasterClass() {
     songStartTime,
     tempoMultiplier,
     handMode,
+    autoPlayEnabled,
     beginSession,
     recordNoteScore,
     finalizeSession,
@@ -51,6 +52,7 @@ export function MasterClass() {
     songStartTime,
     tempoMultiplier,
     handMode,
+    autoPlayEnabled,
     onScore: (score: NoteScore) => {
       recordNoteScore(score);
       const color =

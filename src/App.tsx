@@ -12,7 +12,7 @@ import { Toast } from './components/Toast';
 import { useGameStore } from './stores/useGameStore';
 import { useMidiStore } from './stores/useMidiStore';
 import { midiService } from './services/MidiService';
-import { CURRICULUM, LESSON_SCAFFOLD, UNLOCK_THRESHOLD } from './engine/curriculum';
+import { CURRICULUM, CURRICULUM_SECTIONS, LESSON_SCAFFOLD, UNLOCK_THRESHOLD } from './engine/curriculum';
 import { loadUserSongs, saveUserSongs, parseMidiFile } from './engine/MidiFileParser';
 import type { LessonSong, ScaffoldPhase, TempoMultiplier } from './types/game.types';
 import { TEMPO_PRESETS } from './types/game.types';
@@ -329,7 +329,7 @@ function HomeTab({
   overallProgress, songProgress, completedCount,
   lastSong, lastSongId, userSongs, isUnlocked,
   showImport, setShowImport, importTab, setImportTab,
-  handleSelectLesson, handleSongParsed, handleRemoveUserSong,
+  handleSelectLesson, handleSongParsed, handleRemoveUserSong, handleRenameUserSong,
   onOpenSettings,
 }: {
   overallProgress: import('./types/game.types').OverallProgress;
@@ -611,24 +611,32 @@ function SongLibrary({
       {/* Lessons panel */}
       {libTab === 'lessons' && (
         <div className="flex flex-col gap-1.5 p-3">
-          {CURRICULUM.map((song, i) => {
-            const unlocked = isUnlocked(i);
-            const best     = songProgress[song.id]?.bestScore ?? 0;
-            return (
-              <SongRow
-                key={song.id}
-                song={song}
-                isActive={false}
-                disabled={!unlocked}
-                locked={!unlocked}
-                best={best}
-                meta={unlocked
-                  ? `${LESSON_SCAFFOLD[i]} · ${song.notes.length} notes`
-                  : `Score ${Math.round(UNLOCK_THRESHOLD * 100)}%+ on Level ${i} to unlock`}
-                onSelect={() => handleSelectLesson(song, LESSON_SCAFFOLD[i] as ScaffoldPhase)}
-              />
-            );
-          })}
+          {CURRICULUM_SECTIONS.map((section) => (
+            <div key={section.title}>
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mt-2 mb-1 px-1">
+                {section.title}
+              </p>
+              {CURRICULUM.slice(section.from, section.to + 1).map((song, offset) => {
+                const i       = section.from + offset;
+                const unlocked = isUnlocked(i);
+                const best     = songProgress[song.id]?.bestScore ?? 0;
+                return (
+                  <SongRow
+                    key={song.id}
+                    song={song}
+                    isActive={false}
+                    disabled={!unlocked}
+                    locked={!unlocked}
+                    best={best}
+                    meta={unlocked
+                      ? `${LESSON_SCAFFOLD[i]} · ${song.notes.length} notes`
+                      : `Score ${Math.round(UNLOCK_THRESHOLD * 100)}%+ on Level ${i} to unlock`}
+                    onSelect={() => handleSelectLesson(song, LESSON_SCAFFOLD[i] as ScaffoldPhase)}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       )}
 
@@ -714,6 +722,7 @@ function InlineSettings({ isActive }: { isActive: boolean }) {
     tempoMultiplier, setTempoMultiplier,
     difficulty, setDifficulty,
     handMode, setHandMode,
+    autoPlayEnabled, setAutoPlayEnabled,
   } = useGameStore();
 
   const [expanded, setExpanded] = useState(false);
@@ -784,6 +793,19 @@ function InlineSettings({ isActive }: { isActive: boolean }) {
                 </button>
               ))}
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-600 w-14 flex-shrink-0">Keys</span>
+            <button
+              onClick={() => setAutoPlayEnabled(!autoPlayEnabled)}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors
+                ${autoPlayEnabled ? 'bg-violet-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+            >
+              {autoPlayEnabled ? 'Auto-play on' : 'Auto-play off'}
+            </button>
+            <span className="text-xs text-gray-700">
+              {autoPlayEnabled ? 'Keyboard lights & plays notes for you' : 'Keyboard silent until you press'}
+            </span>
           </div>
         </div>
       )}

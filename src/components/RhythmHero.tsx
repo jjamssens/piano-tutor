@@ -24,6 +24,7 @@ export function RhythmHero() {
     songStartTime,
     tempoMultiplier,
     handMode,
+    autoPlayEnabled,
     showNoteLabels,
     loopEnabled,
     loopRegion,
@@ -59,6 +60,7 @@ export function RhythmHero() {
     songStartTime,
     tempoMultiplier,
     handMode,
+    autoPlayEnabled,
     onScore: (score) => {
       recordNoteScore(score);
       rendererRef.current?.markResult(score.noteId, score.result);

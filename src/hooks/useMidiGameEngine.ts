@@ -12,6 +12,7 @@ interface UseMidiGameEngineOptions {
   songStartTime: number | null;
   tempoMultiplier: TempoMultiplier;
   handMode: HandMode;
+  autoPlayEnabled: boolean;
   onScore: (score: NoteScore) => void;
   onMiss: (note: ScheduledNote) => void;
 }
@@ -34,6 +35,7 @@ export function useMidiGameEngine({
   songStartTime,
   tempoMultiplier,
   handMode,
+  autoPlayEnabled,
   onScore,
   onMiss,
 }: UseMidiGameEngineOptions) {
@@ -66,7 +68,7 @@ export function useMidiGameEngine({
       songStartTime,
       (score) => onScoreRef.current(score),
       (missed) => onMissRef.current(missed),
-      (note) => midiService.lightKey(note),
+      (note) => { if (autoPlayEnabled) midiService.lightKey(note); },
       (note) => midiService.unlightKey(note),
       tempoMultiplier,
     );
@@ -84,7 +86,7 @@ export function useMidiGameEngine({
       engineRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPlaying, song, songStartTime, timingWindowMs, learnMode, tempoMultiplier, handMode]);
+  }, [isPlaying, song, songStartTime, timingWindowMs, learnMode, tempoMultiplier, handMode, autoPlayEnabled]);
 
   return engineRef;
 }

@@ -1,0 +1,46 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'          # triggers on v1.0.0, v1.1.0, etc.
+  workflow_dispatch:  # allows manual trigger from GitHub Actions tab
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build & package macOS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # When you have an Apple Developer account, add these secrets in
+          # GitHub → Settings → Secrets and set CSC_LINK and CSC_KEY_PASSWORD.
+          # CSC_LINK: ${{ secrets.CSC_LINK }}           # base64 .p12 certificate
+          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # APPLE_ID: ${{ secrets.APPLE_ID }}           # for notarization
+          # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run dist:mac
+
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build & package Windows
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # When you have a Windows code signing certificate, add:
+          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: npm run dist:win
