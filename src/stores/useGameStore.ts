@@ -13,7 +13,7 @@ import type {
   SongProgress,
   TempoMultiplier,
 } from '../types/game.types';
-import { TIMING_WINDOWS } from '../types/game.types';
+import { TIMING_WINDOWS, LEAD_IN_MS } from '../types/game.types';
 
 export type SessionPhase = 'idle' | 'countdown' | 'playing' | 'finished';
 
@@ -171,7 +171,7 @@ export const useGameStore = create<GameStoreState>()(
       set({ sessionPhase: 'countdown', noteScores: [], sessionStats: null }),
 
     beginSession: () =>
-      set({ isPlaying: true, sessionPhase: 'playing', songStartTime: performance.now() }),
+      set({ isPlaying: true, sessionPhase: 'playing', songStartTime: performance.now() + LEAD_IN_MS }),
 
     stopSession: () =>
       set({ isPlaying: false, sessionPhase: 'idle' }),

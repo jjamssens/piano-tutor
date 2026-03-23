@@ -3,6 +3,7 @@ import { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } from 'vexflo
 import { useMidiGameEngine } from '../hooks/useMidiGameEngine';
 import { CountdownOverlay } from './CountdownOverlay';
 import { useGameStore } from '../stores/useGameStore';
+import { LEAD_IN_MS } from '../types/game.types';
 import type { NoteScore } from '../types/game.types';
 
 function midiToVexPitch(midi: number): string {
@@ -75,7 +76,7 @@ export function MasterClass() {
     const songDurationMs =
       Math.max(...activeSong.notes.map((n) => n.targetTimestamp + n.durationMs));
     const realDurationMs = songDurationMs / tempoMultiplier;
-    const endTimer = setTimeout(() => finalizeSession(), realDurationMs + 600);
+    const endTimer = setTimeout(() => finalizeSession(), realDurationMs + LEAD_IN_MS + 600);
     return () => clearTimeout(endTimer);
   }, [isPlaying, activeSong, finalizeSession]);
 

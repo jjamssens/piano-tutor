@@ -1,5 +1,8 @@
 import type { NoteNumber } from './midi.types';
 
+/** Lead-in delay (ms) after countdown before the first note is due. */
+export const LEAD_IN_MS = 3000;
+
 // ─── Difficulty ────────────────────────────────────────────────────────────────
 
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced';

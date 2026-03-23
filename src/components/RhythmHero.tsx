@@ -4,6 +4,7 @@ import { useMidiGameEngine } from '../hooks/useMidiGameEngine';
 import { CountdownOverlay } from './CountdownOverlay';
 import { useGameStore } from '../stores/useGameStore';
 import { useMidiStore } from '../stores/useMidiStore';
+import { LEAD_IN_MS } from '../types/game.types';
 
 const CANVAS_WIDTH  = 900;
 const CANVAS_HEIGHT = 500;
@@ -98,7 +99,7 @@ export function RhythmHero() {
 
     // Divide by tempoMultiplier to get real-time duration at this speed
     const realDurationMs = songDurationMs / tempoMultiplier;
-    const endTimer = setTimeout(() => finalizeSession(), realDurationMs + 600);
+    const endTimer = setTimeout(() => finalizeSession(), realDurationMs + LEAD_IN_MS + 600);
 
     return () => {
       renderer.stop();
