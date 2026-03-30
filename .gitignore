@@ -32,3 +32,4 @@ release
 
 # Electron builder cache
 .electron-builder-cache
+.claude/
