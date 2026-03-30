@@ -3,8 +3,9 @@ import {
   Menu, dialog, clipboard,
 } from 'electron';
 import { join, basename, normalize, resolve } from 'path';
+import path from 'node:path';
 import { homedir } from 'os';
-import { readFileSync, writeFileSync, existsSync, realpathSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync, statSync } from 'fs';
 import { autoUpdater } from 'electron-updater';
 
 // Enable Web MIDI API in the Chromium renderer.
@@ -104,8 +105,19 @@ function buildMenu(): void {
     // Edit — gives Cut / Copy / Paste / Select All in text inputs
     { role: 'editMenu' as const },
 
-    // View — Dev Tools in dev, reload, fullscreen
-    { role: 'viewMenu' as const },
+    // View — reload + fullscreen always; DevTools only in dev builds
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' as const },
+        { role: 'forceReload' as const },
+        { role: 'togglefullscreen' as const },
+        ...(app.isPackaged ? [] : [
+          { type: 'separator' as const },
+          { role: 'toggleDevTools' as const },
+        ]),
+      ],
+    },
 
     // Help
     {
@@ -209,10 +221,10 @@ function createWindow(): void {
   //   setPermissionCheckHandler  → answers "do I have permission?" (sync)
   //   setPermissionRequestHandler → answers the explicit request prompt (async)
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
-    return permission === 'midi' || permission === 'midiSysex';
+    return permission === 'midi'; // sysex not needed — do not grant
   });
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    callback(permission === 'midi' || permission === 'midiSysex');
+    callback(permission === 'midi'); // reject midiSysex requests
   });
 
   // Load app
@@ -300,8 +312,17 @@ ipcMain.handle(
     try {
       // Resolve symlinks before checking allowed roots — prevents ln -s /etc/secret.mid attacks
       const real    = realpathSync(normalize(filePath));
-      const allowed = ALLOWED_READ_ROOTS.some((root) => real.startsWith(resolve(root) + '/') || real === resolve(root));
+      const normalizedReal = real.split(path.sep).join('/');
+      const allowed = ALLOWED_READ_ROOTS.some((root) => {
+        const normalizedRoot = resolve(root).split(path.sep).join('/');
+        return normalizedReal.startsWith(normalizedRoot + '/') || normalizedReal === normalizedRoot;
+      });
       if (!allowed) return { error: 'Access denied: file outside allowed directories.' };
+      const MAX_MIDI_BYTES = 20 * 1024 * 1024; // 20 MB
+      const fileSize = statSync(real).size;
+      if (fileSize > MAX_MIDI_BYTES) {
+        return { error: 'File too large. Maximum MIDI file size is 20 MB.' };
+      }
       const buf = readFileSync(real);
       return { data: buf.toString('base64'), name: basename(real) };
     } catch (err) {
@@ -337,8 +358,37 @@ ipcMain.handle(
       if (ct.includes('application/json')) {
         return { type: 'json', data: await response.json() };
       }
-      const buffer = await response.arrayBuffer();
-      return { type: 'binary', data: Buffer.from(buffer).toString('base64') };
+
+      const MAX_BINARY_BYTES = 10 * 1024 * 1024; // 10 MB
+
+      // Check Content-Length header first as a fast gate
+      const contentLength = parseInt(response.headers.get('content-length') ?? '0', 10);
+      if (contentLength > MAX_BINARY_BYTES) {
+        return { type: 'error', message: 'MIDI file too large (max 10MB).' };
+      }
+
+      // Stream with size enforcement to prevent unbounded memory use
+      const reader = response.body?.getReader();
+      if (!reader) return { type: 'error', message: 'No response body.' };
+
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          totalBytes += value.byteLength;
+          if (totalBytes > MAX_BINARY_BYTES) {
+            reader.cancel();
+            return { type: 'error', message: 'MIDI file too large (max 10MB).' };
+          }
+          chunks.push(value);
+        }
+      }
+      const merged = new Uint8Array(totalBytes);
+      let offset = 0;
+      for (const chunk of chunks) { merged.set(chunk, offset); offset += chunk.byteLength; }
+      return { type: 'binary', data: Buffer.from(merged).toString('base64') };
     } catch (err) {
       return { type: 'error', message: (err as Error).message };
     }

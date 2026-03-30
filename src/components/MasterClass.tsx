@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } from 'vexflow';
 import { useMidiGameEngine } from '../hooks/useMidiGameEngine';
 import { CountdownOverlay } from './CountdownOverlay';
+import { PianoKeyboard } from './PianoKeyboard';
 import { useGameStore } from '../stores/useGameStore';
 import { LEAD_IN_MS } from '../types/game.types';
 import type { NoteScore } from '../types/game.types';
@@ -28,6 +29,7 @@ function midiToVexPitch(midi: number): string {
 export function MasterClass() {
   const containerRef = useRef<HTMLDivElement>(null);
   const highlightMap = useRef<Map<string, string>>(new Map());
+  const [litNotes, setLitNotes] = useState<Set<number>>(new Set());
 
   const {
     activeSong,
@@ -43,6 +45,19 @@ export function MasterClass() {
     recordNoteScore,
     finalizeSession,
   } = useGameStore();
+
+  const handleLight = useCallback((note: number) => {
+    setLitNotes((prev) => { const next = new Set(prev); next.add(note); return next; });
+  }, []);
+
+  const handleUnlight = useCallback((note: number) => {
+    setLitNotes((prev) => { const next = new Set(prev); next.delete(note); return next; });
+  }, []);
+
+  // Clear lit notes whenever a session ends
+  useEffect(() => {
+    if (!isPlaying) setLitNotes(new Set());
+  }, [isPlaying]);
 
   // Engine + MIDI + lighting — shared hook
   useMidiGameEngine({
@@ -67,6 +82,8 @@ export function MasterClass() {
       highlightMap.current.set(missed.id, '#6b7280');
       if (containerRef.current) applyHighlights(containerRef.current, highlightMap.current);
     },
+    onLight:   handleLight,
+    onUnlight: handleUnlight,
   });
 
   // ─── Song end timer ───────────────────────────────────────────────────────
@@ -147,7 +164,7 @@ export function MasterClass() {
   const showCountdown = sessionPhase === 'countdown';
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-4">
       <div className="relative">
         <div
           ref={containerRef}
@@ -158,6 +175,12 @@ export function MasterClass() {
           <CountdownOverlay onComplete={beginSession} />
         )}
       </div>
+
+      {/* Piano keyboard — violet = next note, green = pressed */}
+      <div className="rounded-xl border border-gray-700 bg-gray-900 p-3 overflow-x-auto">
+        <PianoKeyboard highlightedNotes={litNotes} />
+      </div>
+
       {!activeSong && (
         <p className="text-gray-500 text-sm">No lesson loaded.</p>
       )}

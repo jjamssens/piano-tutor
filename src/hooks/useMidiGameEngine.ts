@@ -15,6 +15,8 @@ interface UseMidiGameEngineOptions {
   autoPlayEnabled: boolean;
   onScore: (score: NoteScore) => void;
   onMiss: (note: ScheduledNote) => void;
+  onLight?: (note: number) => void;
+  onUnlight?: (note: number) => void;
 }
 
 /**
@@ -38,13 +40,19 @@ export function useMidiGameEngine({
   autoPlayEnabled,
   onScore,
   onMiss,
+  onLight,
+  onUnlight,
 }: UseMidiGameEngineOptions) {
   const engineRef = useRef<GameEngine | null>(null);
 
-  const onScoreRef = useRef(onScore);
-  const onMissRef  = useRef(onMiss);
-  onScoreRef.current = onScore;
-  onMissRef.current  = onMiss;
+  const onScoreRef   = useRef(onScore);
+  const onMissRef    = useRef(onMiss);
+  const onLightRef   = useRef(onLight);
+  const onUnlightRef = useRef(onUnlight);
+  onScoreRef.current   = onScore;
+  onMissRef.current    = onMiss;
+  onLightRef.current   = onLight;
+  onUnlightRef.current = onUnlight;
 
   useEffect(() => {
     if (!isPlaying || !song || songStartTime === null) return;
@@ -68,8 +76,8 @@ export function useMidiGameEngine({
       songStartTime,
       (score) => onScoreRef.current(score),
       (missed) => onMissRef.current(missed),
-      (note) => { if (autoPlayEnabled) midiService.lightKey(note); },
-      (note) => midiService.unlightKey(note),
+      (note) => { if (autoPlayEnabled) midiService.lightKey(note); onLightRef.current?.(note); },
+      (note) => { midiService.unlightKey(note); onUnlightRef.current?.(note); },
       tempoMultiplier,
     );
 

@@ -16,12 +16,18 @@ function octave(midi: number): number {
   return Math.floor(midi / 12) - 1;
 }
 
+interface PianoKeyboardProps {
+  /** Notes to highlight as "expected next" — shown in violet, distinct from pressed green. */
+  highlightedNotes?: Set<number>;
+}
+
 /**
  * PianoKeyboard — 61-key visual display (C2–C7).
  * When showNoteLabels is on, note names are displayed on white keys.
  * C notes always get the octave number label regardless.
+ * highlightedNotes shows expected upcoming notes in violet (lower priority than pressed green).
  */
-export function PianoKeyboard() {
+export function PianoKeyboard({ highlightedNotes }: PianoKeyboardProps = {}) {
   const keyStates      = useMidiStore((s) => s.keyStates);
   const keyboardRange  = useMidiStore((s) => s.keyboardRange);
   const showNoteLabels = useGameStore((s) => s.showNoteLabels);
@@ -47,13 +53,17 @@ export function PianoKeyboard() {
     <div className="relative select-none" style={{ width: totalWidth, height: 160 }}>
       {/* White keys */}
       {whiteKeys.map((note) => {
-        const state    = keyStates.get(note);
-        const pressed  = state?.isPressed ?? false;
-        const velAlpha = pressed ? 0.4 + (state!.velocity / 127) * 0.6 : 0;
-        const idx      = whiteKeyIndex.get(note) ?? 0;
-        const name     = noteName(note);
-        const isC      = note % 12 === 0;
-        const showLabel = showNoteLabels || isC;
+        const state      = keyStates.get(note);
+        const pressed    = state?.isPressed ?? false;
+        const lit        = highlightedNotes?.has(note) ?? false;
+        const velAlpha   = pressed ? 0.4 + (state!.velocity / 127) * 0.6 : 0;
+        const idx        = whiteKeyIndex.get(note) ?? 0;
+        const name       = noteName(note);
+        const isC        = note % 12 === 0;
+        const showLabel  = showNoteLabels || isC;
+        const bgColor    = pressed ? `rgba(74,222,128,${velAlpha})`
+                         : lit     ? 'rgba(139,92,246,0.55)'
+                         :           'white';
 
         return (
           <div
@@ -64,7 +74,7 @@ export function PianoKeyboard() {
               left:            idx * WHITE_KEY_WIDTH,
               width:           WHITE_KEY_WIDTH - 1,
               height:          160,
-              backgroundColor: pressed ? `rgba(74,222,128,${velAlpha})` : 'white',
+              backgroundColor: bgColor,
               zIndex:          1,
               transition:      'background-color 30ms',
             }}
@@ -83,12 +93,16 @@ export function PianoKeyboard() {
 
       {/* Black keys */}
       {blackKeys.map((note) => {
-        const state    = keyStates.get(note);
-        const pressed  = state?.isPressed ?? false;
-        const velAlpha = pressed ? 0.5 + (state!.velocity / 127) * 0.5 : 1;
+        const state     = keyStates.get(note);
+        const pressed   = state?.isPressed ?? false;
+        const lit       = highlightedNotes?.has(note) ?? false;
+        const velAlpha  = pressed ? 0.5 + (state!.velocity / 127) * 0.5 : 1;
         const prevWhite = whiteKeyIndex.get(note - 1) ?? 0;
         const leftPos   = (prevWhite + 1) * WHITE_KEY_WIDTH - 9;
         const name      = noteName(note);
+        const bgColor   = pressed ? `rgba(74,222,128,${velAlpha})`
+                        : lit     ? 'rgba(109,40,217,0.9)'
+                        :           '#1a1a1a';
 
         return (
           <div
@@ -99,7 +113,7 @@ export function PianoKeyboard() {
               left:            leftPos,
               width:           18,
               height:          100,
-              backgroundColor: pressed ? `rgba(74,222,128,${velAlpha})` : '#1a1a1a',
+              backgroundColor: bgColor,
               zIndex:          2,
               transition:      'background-color 30ms',
             }}
